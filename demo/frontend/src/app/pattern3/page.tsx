@@ -1,13 +1,28 @@
 "use client";
 
-import { PatternChatPage } from "../components/shared/PatternChatPage";
+import { CopilotKitProvider } from "@copilotkit/react-core/v2";
+import { ReactNode } from "react";
+import { PatternPage } from "../components/PatternPage";
+import { BACKEND_URL } from "../lib/constants";
 
-export default function Pattern3ChatPage() {
+function Provider({ children }: { children: ReactNode }) {
   return (
-    <PatternChatPage
-      name="Pattern 3: Direct Python (useSingleEndpoint)"
-      description="Frontend connects directly to Python backend via runtimeUrl + useSingleEndpoint"
-      headerColor="bg-purple-50"
+    <CopilotKitProvider runtimeUrl={BACKEND_URL} useSingleEndpoint>
+      {children}
+    </CopilotKitProvider>
+  );
+}
+
+export default function Pattern3Page() {
+  return (
+    <PatternPage
+      config={{
+        name: "Pattern 3: useSingleEndpoint",
+        description: "runtimeUrl + useSingleEndpoint",
+        headerColor: "bg-purple-50",
+        storageKey: "cpk-p3-thread",
+      }}
+      renderProvider={(props) => <Provider {...props} />}
     />
   );
 }

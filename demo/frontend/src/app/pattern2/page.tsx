@@ -1,13 +1,27 @@
 "use client";
 
-import { PatternChatPage } from "../components/shared/PatternChatPage";
+import { CopilotKitProvider } from "@copilotkit/react-core/v2";
+import { ReactNode } from "react";
+import { PatternPage } from "../components/PatternPage";
 
-export default function Pattern2ChatPage() {
+function Provider({ children }: { children: ReactNode }) {
   return (
-    <PatternChatPage
-      name="Pattern 2: Next.js Proxy"
-      description="Frontend connects via API route (/api/copilotkit) which proxies to Python backend"
-      headerColor="bg-green-50"
+    <CopilotKitProvider runtimeUrl="/api/copilotkit">
+      {children}
+    </CopilotKitProvider>
+  );
+}
+
+export default function Pattern2Page() {
+  return (
+    <PatternPage
+      config={{
+        name: "Pattern 2: Next.js Proxy",
+        description: "runtimeUrl → /api/copilotkit",
+        headerColor: "bg-green-50",
+        storageKey: "cpk-p2-thread",
+      }}
+      renderProvider={(props) => <Provider {...props} />}
     />
   );
 }
