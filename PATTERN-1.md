@@ -40,14 +40,14 @@ CopilotKitProvider          FastAPI
 | File | Purpose |
 |------|---------|
 | `demo/frontend/src/app/lib/constants.ts` | BACKEND_URL, AGENT_ID config |
-| `demo/frontend/src/app/pattern1/layout.tsx:9-16` | HttpAgent creation |
-| `demo/frontend/src/app/pattern1/layout.tsx:19` | `agents__unsafe_dev_only` prop |
+| `demo/frontend/src/app/pattern1/page.tsx:16-18` | HttpAgent creation |
+| `demo/frontend/src/app/pattern1/page.tsx:21` | `agents__unsafe_dev_only` prop |
 
 ## Key Concepts
 
-**HttpAgent**: Direct connection to AG-UI endpoint - see `layout.tsx:11-14`
+**HttpAgent**: Direct connection to AG-UI endpoint - see `page.tsx:17`
 
-**agents__unsafe_dev_only**: Dev-only prop that bypasses runtime - see `layout.tsx:19`
+**agents__unsafe_dev_only**: Dev-only prop that bypasses runtime - see `page.tsx:21`
 
 **MemorySaver**: Required for AG-UI - see `graph.py:21-22`
 

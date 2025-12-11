@@ -32,9 +32,9 @@ Frontend (Next.js)                    Backend (Python)
 
 | Pattern | Use Case | File |
 |---------|----------|------|
-| [Pattern 1](./PATTERN-1.md) | Development - Direct AG-UI | `demo/frontend/.../pattern1/layout.tsx` |
-| [Pattern 2](./PATTERN-2.md) | Production - Next.js Proxy | `demo/frontend/.../api/copilotkit/` |
-| [Pattern 3](./PATTERN-3.md) | Minimal - useSingleEndpoint | `demo/frontend/.../pattern3/layout.tsx` |
+| [Pattern 1](./PATTERN-1.md) | Development - Direct AG-UI | `demo/frontend/.../pattern1/page.tsx` |
+| [Pattern 2](./PATTERN-2.md) | Production - Next.js Proxy | `demo/frontend/.../pattern2/page.tsx` |
+| [Pattern 3](./PATTERN-3.md) | Minimal - useSingleEndpoint | `demo/frontend/.../pattern3/page.tsx` |
 
 ## Demo Source
 
@@ -50,12 +50,12 @@ demo/
 └── frontend/
     └── src/app/
         ├── lib/constants.ts           # Config
-        ├── pattern1/                  # Direct AG-UI
-        ├── pattern2/                  # Next.js Proxy
-        ├── pattern3/                  # useSingleEndpoint
-        ├── api/copilotkit/            # Proxy route
-        ├── hooks/                     # useAgentState, useThreadManager
-        └── components/shared/         # UI components
+        ├── pattern1/page.tsx          # Direct AG-UI (self-contained)
+        ├── pattern2/page.tsx          # Next.js Proxy (self-contained)
+        ├── pattern3/page.tsx          # useSingleEndpoint (self-contained)
+        ├── api/copilotkit/            # Proxy route (Pattern 2)
+        ├── hooks/useThreadManager.ts  # Thread persistence hook
+        └── components/PatternPage.tsx # Shared UI with tabs
 ```
 
 ## Setup

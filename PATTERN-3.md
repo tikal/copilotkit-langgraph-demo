@@ -45,11 +45,11 @@ CopilotKitProvider                     FastAPI
 
 | File | Purpose |
 |------|---------|
-| `demo/frontend/src/app/pattern3/layout.tsx:9` | `runtimeUrl={BACKEND_URL} useSingleEndpoint={true}` |
+| `demo/frontend/src/app/pattern3/page.tsx:10` | `runtimeUrl={BACKEND_URL} useSingleEndpoint` |
 
 ## Key Concepts
 
-**useSingleEndpoint**: All requests go to single POST endpoint with method dispatch - see `layout.tsx:9`
+**useSingleEndpoint**: All requests go to single POST endpoint with method dispatch - see `page.tsx:10`
 
 **Method dispatch**: Backend routes by `method` field:
 - `info` - Returns agent metadata
