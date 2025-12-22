@@ -31,6 +31,35 @@ const RegenerateContext = createContext<{
 } | null>(null);
 
 /**
+ * Calculates which messages to keep when regenerating an assistant message.
+ * Returns messages up to and including the user message that triggered the assistant response.
+ */
+function getMessagesBeforeRegeneration(
+  messages: Message[],
+  targetMessageIndex: number
+): Message[] {
+  // Edge case: regenerating the first assistant message
+  if (targetMessageIndex === 0) {
+    return messages.length > 1 ? messages.slice(0, 2) : messages.slice(0, 1);
+  }
+
+  // Find the last user message before the target assistant message
+  const lastUserMessage = messages
+    .slice(0, targetMessageIndex)
+    .reverse()
+    .find((msg) => msg.role === "user");
+
+  if (!lastUserMessage) {
+    // Fallback: keep only the first message (typically system message)
+    return [messages[0]];
+  }
+
+  // Find index and slice up to (and including) that user message
+  const userMessageIndex = messages.findIndex((msg) => msg.id === lastUserMessage.id);
+  return messages.slice(0, userMessageIndex + 1);
+}
+
+/**
  * Provider that implements the regenerate logic at a stable parent level.
  * The hook refs ensure the latest agent/copilotkit are used even if they change.
  */
@@ -60,42 +89,14 @@ function RegenerateProvider({ children }: { children: ReactNode }) {
     const messages = currentAgent.messages ?? [];
     if (messages.length === 0) return;
 
-    // Find the index of the message to regenerate
     const reloadMessageIndex = messages.findIndex((msg) => msg.id === messageId);
     if (reloadMessageIndex === -1) return;
-
-    // Ensure it's an assistant message
     if (messages[reloadMessageIndex].role !== "assistant") return;
 
-    // Work backwards to find the user message before this assistant message
-    let historyCutoff: Message[] = [messages[0]];
+    // Calculate which messages to keep
+    const historyCutoff = getMessagesBeforeRegeneration(messages, reloadMessageIndex);
 
-    if (messages.length > 2 && reloadMessageIndex !== 0) {
-      const lastUserMessageBeforeRegenerate = messages
-        .slice(0, reloadMessageIndex)
-        .reverse()
-        .find((msg) => msg.role === "user");
-
-      if (lastUserMessageBeforeRegenerate) {
-        const indexOfLastUserMessage = messages.findIndex(
-          (msg) => msg.id === lastUserMessageBeforeRegenerate.id
-        );
-        // Include the user message, remove everything after it
-        historyCutoff = messages.slice(0, indexOfLastUserMessage + 1);
-      }
-    } else if (messages.length > 2 && reloadMessageIndex === 0) {
-      // Edge case: regenerating the first assistant message in a multi-message thread
-      // Keep system message (index 0) and first user message (index 1)
-      historyCutoff = [messages[0], messages[1]];
-    }
-
-    // Keep the original user message ID so backend can find the checkpoint
-    // The backend detects regeneration when checkpoint has more messages than frontend sent
-    // It then looks for the message ID in history to find the checkpoint to fork from
     currentAgent.setMessages(historyCutoff);
-
-    // Run the agent - the backend will detect this is a regeneration
-    // because its checkpoint has more messages than what we're sending
     currentCopilotkit.runAgent({ agent: currentAgent });
   }, []);
 
