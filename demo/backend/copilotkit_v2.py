@@ -84,17 +84,8 @@ def add_copilotkit_v2_single_endpoint(
                 if thread_id:
                     config = {"configurable": {"thread_id": thread_id}}
                     state = await agent.graph.aget_state(config)
-                    logger.info(
-                        f"[CopilotKit] fetched state for thread_id={thread_id}: "
-                        f"has_values={bool(state and state.values)}"
-                    )
                     if state and state.values:
-                        state_keys = list(state.values.keys())
                         msgs = state.values.get("messages", [])
-                        logger.info(
-                            f"[CopilotKit] state_keys={state_keys} "
-                            f"messages_count={len(msgs)}"
-                        )
                         yield encoder.encode(
                             StateSnapshotEvent(
                                 type=EventType.STATE_SNAPSHOT,
@@ -125,6 +116,17 @@ def add_copilotkit_v2_single_endpoint(
             if not agent:
                 raise HTTPException(404, f"Agent '{agent_id}' not found")
             request_body = body.get("body", {})
+
+            # CopilotKit v2 may send threadId in different locations/cases depending on
+            # the request source. Normalize to snake_case for RunAgentInput compatibility.
+            thread_id = request_body.get("threadId") or request_body.get("thread_id")
+            if not thread_id:
+                forwarded = request_body.get("forwardedProps", {}) or request_body.get("forwarded_props", {})
+                thread_id = forwarded.get("threadId") or forwarded.get("thread_id")
+
+            if thread_id:
+                request_body["thread_id"] = thread_id  # Use snake_case for RunAgentInput
+
             input_data = RunAgentInput(**request_body)
             return _create_streaming_response(agent, input_data, request)
 

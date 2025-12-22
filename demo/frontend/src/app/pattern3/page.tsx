@@ -7,7 +7,11 @@ import { BACKEND_URL } from "../lib/constants";
 
 function Provider({ children }: { children: ReactNode }) {
   return (
-    <CopilotKitProvider runtimeUrl={BACKEND_URL} useSingleEndpoint>
+    <CopilotKitProvider
+      runtimeUrl={BACKEND_URL}
+      useSingleEndpoint
+      onError={(error) => console.error("[CopilotKit Error]", error)}
+    >
       {children}
     </CopilotKitProvider>
   );

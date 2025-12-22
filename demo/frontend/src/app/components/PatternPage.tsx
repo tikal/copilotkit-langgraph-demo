@@ -1,9 +1,130 @@
 "use client";
 
-import { ReactNode, ReactElement, useState, cloneElement } from "react";
-import { CopilotChat, useAgent } from "@copilotkit/react-core/v2";
+import React, {
+  ReactNode,
+  ReactElement,
+  useState,
+  cloneElement,
+  useCallback,
+  useRef,
+  createContext,
+  useContext,
+} from "react";
+import {
+  CopilotChat,
+  CopilotChatAssistantMessage,
+  CopilotChatAssistantMessageProps,
+  useAgent,
+  useCopilotKit,
+  Message,
+} from "@copilotkit/react-core/v2";
 import { AGENT_ID, AgentState } from "../lib/constants";
 import { useThreadManager } from "../hooks/useThreadManager";
+
+/**
+ * Context to provide regenerate function from a stable parent.
+ * This prevents the regenerate callback from being interrupted when
+ * the message component unmounts during message list updates.
+ */
+const RegenerateContext = createContext<{
+  regenerate: (messageId: string) => void;
+} | null>(null);
+
+/**
+ * Provider that implements the regenerate logic at a stable parent level.
+ * The hook refs ensure the latest agent/copilotkit are used even if they change.
+ */
+function RegenerateProvider({ children }: { children: ReactNode }) {
+  const { agent } = useAgent({ agentId: AGENT_ID });
+  const { copilotkit } = useCopilotKit();
+
+  // Store refs to always have the latest values
+  const agentRef = useRef(agent);
+  const copilotkitRef = useRef(copilotkit);
+  agentRef.current = agent;
+  copilotkitRef.current = copilotkit;
+
+  /**
+   * Regenerates an assistant message by:
+   * 1. Finding the user message that triggered it
+   * 2. Truncating history to include only messages up to (and including) that user message
+   * 3. Re-running the agent, which the backend detects as regeneration
+   *    (checkpoint has more messages than frontend sent)
+   */
+  const regenerate = useCallback((messageId: string) => {
+    const currentAgent = agentRef.current;
+    const currentCopilotkit = copilotkitRef.current;
+
+    if (!currentAgent) return;
+
+    const messages = currentAgent.messages ?? [];
+    if (messages.length === 0) return;
+
+    // Find the index of the message to regenerate
+    const reloadMessageIndex = messages.findIndex((msg) => msg.id === messageId);
+    if (reloadMessageIndex === -1) return;
+
+    // Ensure it's an assistant message
+    if (messages[reloadMessageIndex].role !== "assistant") return;
+
+    // Work backwards to find the user message before this assistant message
+    let historyCutoff: Message[] = [messages[0]];
+
+    if (messages.length > 2 && reloadMessageIndex !== 0) {
+      const lastUserMessageBeforeRegenerate = messages
+        .slice(0, reloadMessageIndex)
+        .reverse()
+        .find((msg) => msg.role === "user");
+
+      if (lastUserMessageBeforeRegenerate) {
+        const indexOfLastUserMessage = messages.findIndex(
+          (msg) => msg.id === lastUserMessageBeforeRegenerate.id
+        );
+        // Include the user message, remove everything after it
+        historyCutoff = messages.slice(0, indexOfLastUserMessage + 1);
+      }
+    } else if (messages.length > 2 && reloadMessageIndex === 0) {
+      // Edge case: regenerating the first assistant message in a multi-message thread
+      // Keep system message (index 0) and first user message (index 1)
+      historyCutoff = [messages[0], messages[1]];
+    }
+
+    // Keep the original user message ID so backend can find the checkpoint
+    // The backend detects regeneration when checkpoint has more messages than frontend sent
+    // It then looks for the message ID in history to find the checkpoint to fork from
+    currentAgent.setMessages(historyCutoff);
+
+    // Run the agent - the backend will detect this is a regeneration
+    // because its checkpoint has more messages than what we're sending
+    currentCopilotkit.runAgent({ agent: currentAgent });
+  }, []);
+
+  return (
+    <RegenerateContext.Provider value={{ regenerate }}>
+      {children}
+    </RegenerateContext.Provider>
+  );
+}
+
+/**
+ * Custom AssistantMessage component that wires up the regenerate callback.
+ * It delegates to the parent RegenerateProvider context to avoid unmount issues.
+ */
+function AssistantMessageWithRegenerate(props: CopilotChatAssistantMessageProps) {
+  const ctx = useContext(RegenerateContext);
+
+  const handleRegenerate = useCallback(() => {
+    if (!props.message?.id || !ctx) return;
+    ctx.regenerate(props.message.id);
+  }, [props.message?.id, ctx]);
+
+  return (
+    <CopilotChatAssistantMessage
+      {...props}
+      onRegenerate={handleRegenerate}
+    />
+  );
+}
 
 export interface PatternConfig {
   name: string;
@@ -56,8 +177,8 @@ export function PatternPage({ config, renderProvider }: PatternPageProps) {
             ))}
           </div>
           <main className="flex-1 min-h-0 flex">
-            {activeTab === "chat" && <ChatView />}
-            {activeTab === "state" && <StateView />}
+            {activeTab === "chat" && <ChatView threadId={threadId} />}
+            {activeTab === "state" && <StateView threadId={threadId} />}
             {activeTab === "threads" && (
               <ThreadsView
                 threadId={threadId}
@@ -84,15 +205,21 @@ function AgentStatus() {
   );
 }
 
-function ChatView() {
+function ChatView({ threadId }: { threadId: string }) {
   return (
-    <div className="flex-1 min-h-0">
-      <CopilotChat agentId={AGENT_ID} />
-    </div>
+    <RegenerateProvider>
+      <div className="flex-1 min-h-0">
+        <CopilotChat
+          agentId={AGENT_ID}
+          threadId={threadId}
+          messageView={{ assistantMessage: AssistantMessageWithRegenerate }}
+        />
+      </div>
+    </RegenerateProvider>
   );
 }
 
-function StateView() {
+function StateView({ threadId }: { threadId: string }) {
   const { agent } = useAgent({ agentId: AGENT_ID });
   const state = agent.state as AgentState | undefined;
 
@@ -148,10 +275,22 @@ function StateView() {
           </div>
         </div>
       </div>
-      <div className="flex-1 min-h-0">
-        <CopilotChat agentId={AGENT_ID} />
-      </div>
+      <StateChatView threadId={threadId} />
     </>
+  );
+}
+
+function StateChatView({ threadId }: { threadId: string }) {
+  return (
+    <RegenerateProvider>
+      <div className="flex-1 min-h-0">
+        <CopilotChat
+          agentId={AGENT_ID}
+          threadId={threadId}
+          messageView={{ assistantMessage: AssistantMessageWithRegenerate }}
+        />
+      </div>
+    </RegenerateProvider>
   );
 }
 
@@ -273,14 +412,26 @@ function ThreadsView({
           )}
         </div>
       </div>
+      <ThreadsChatView threadId={threadId} />
+    </>
+  );
+}
+
+function ThreadsChatView({ threadId }: { threadId: string }) {
+  return (
+    <RegenerateProvider>
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="p-2 bg-gray-100 text-xs border-b">
           Thread: <code className="bg-white px-1 rounded">{threadId}</code>
         </div>
         <div className="flex-1 min-h-0">
-          <CopilotChat agentId={AGENT_ID} threadId={threadId} />
+          <CopilotChat
+            agentId={AGENT_ID}
+            threadId={threadId}
+            messageView={{ assistantMessage: AssistantMessageWithRegenerate }}
+          />
         </div>
       </div>
-    </>
+    </RegenerateProvider>
   );
 }

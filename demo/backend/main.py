@@ -11,9 +11,9 @@ logging.basicConfig(
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from copilotkit import LangGraphAGUIAgent
 from graph import graph
 from copilotkit_v2 import add_copilotkit_v2_single_endpoint
+from fixed_agent import FixedLangGraphAgent
 
 app = FastAPI()
 
@@ -24,7 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-agent = LangGraphAGUIAgent(
+agent = FixedLangGraphAgent(
     name="my-agent",
     description="A helpful assistant",
     graph=graph,
