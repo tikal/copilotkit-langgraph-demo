@@ -3,12 +3,12 @@ name = "test-copilotkit-backend"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-    "copilotkit>=0.1.74",
+    "copilotkit>=0.1.76",
     "langgraph>=1.0.5",
 #    "langchain-google-genai>=2.0.0",
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
-    "ag-ui-langgraph>=0.0.22",
+    "ag-ui-langgraph>=0.0.23",
     "python-dotenv>=1.2.1",
     "langchain-openai>=1.1.0",
 ]

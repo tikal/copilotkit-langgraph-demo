@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const patterns = [
   { href: "/pattern1", label: "Pattern 1", desc: "Direct AG-UI" },
   { href: "/pattern2", label: "Pattern 2", desc: "Next.js Proxy" },
-  { href: "/pattern3", label: "Pattern 3", desc: "useSingleEndpoint" },
+  { href: "/pattern3", label: "Pattern 3", desc: "State Streaming" },
 ];
 
 export function DemoNav() {

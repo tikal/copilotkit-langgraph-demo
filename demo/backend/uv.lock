@@ -10,7 +10,7 @@ resolution-markers = [
 
 [[package]]
 name = "ag-ui-langgraph"
-version = "0.0.22"
+version = "0.0.23"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-protocol" },
@@ -19,9 +19,9 @@ dependencies = [
     { name = "langgraph" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/93/b9/1d5c794cc7bf3b5d86d58821b6db167a8da7669aa7f52cc8b2ebfb052fc8/ag_ui_langgraph-0.0.22.tar.gz", hash = "sha256:92d963e416d3f2784ecaadfb8306217ad7d1bd13b2a07c0c75634a5f0820439d", size = 12963 }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/76/beca247c88713c9ecca28d229419a1cb81644c0c7e1a4d9872baf4ad7900/ag_ui_langgraph-0.0.23.tar.gz", hash = "sha256:6f44958b996e7be4ca77533932857369e5ac038bfd60281b6a9fc28916d2af4e", size = 13032 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/32/3fa9a8db5ffd5ff489f048227ff00651278a83466db85f57ad5fdc0d0f18/ag_ui_langgraph-0.0.22-py3-none-any.whl", hash = "sha256:7f86f9fc70614c909dbd2452fcdfc9759da53b8cdded163a3cb91f2ae753add2", size = 14697 },
+    { url = "https://files.pythonhosted.org/packages/52/0f/5f2d5bc4582ae3e9d7aab3a2db77827ab7bd2cc77381892deb58fd4fd00f/ag_ui_langgraph-0.0.23-py3-none-any.whl", hash = "sha256:d1911eb6cf28749ebc17c176de7d5bb134cc14b73cc5764005fc38ba6b76c2fb", size = 14760 },
 ]
 
 [package.optional-dependencies]
@@ -185,7 +185,7 @@ wheels = [
 
 [[package]]
 name = "copilotkit"
-version = "0.1.74"
+version = "0.1.76"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-langgraph", extra = ["fastapi"] },
@@ -195,9 +195,9 @@ dependencies = [
     { name = "partialjson" },
     { name = "toml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/90/56/a809ce93240a8bdbf42c37e817a9578fbde3a7197a48f8ec4370c7cd10ce/copilotkit-0.1.74.tar.gz", hash = "sha256:7107a139f74d6edaabfe1189bdfa7059546b73674ea7c416991d830bd26235c3", size = 35608 }
+sdist = { url = "https://files.pythonhosted.org/packages/dc/cd/afd4cafa17d9196fb805a5a84ea2eebcef88492cd7d4df0250434eeacdc2/copilotkit-0.1.76.tar.gz", hash = "sha256:03190bf289aceac073f2524681a3c1bafbabcdd97276c697ded0aa661dbcec84", size = 36845 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/ec/7682dda1afa410b6faccc037e50afbf0514542e692823808ad5d1e5bd66c/copilotkit-0.1.74-py3-none-any.whl", hash = "sha256:6a54c916363c1009c8fda8f5b543c378448bc9752ca5de70f66ffd292d3a7544", size = 44636 },
+    { url = "https://files.pythonhosted.org/packages/d4/28/57819cfe9a8a437e348ed04a3c958d4ec12fa455e52fdf35e8862323fd56/copilotkit-0.1.76-py3-none-any.whl", hash = "sha256:42d2e332afad47ce73760ce67ae6fae97df0def6d5446417150b075e1708d0ef", size = 46204 },
 ]
 
 [[package]]
@@ -1064,8 +1064,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ag-ui-langgraph", specifier = ">=0.0.22" },
-    { name = "copilotkit", specifier = ">=0.1.74" },
+    { name = "ag-ui-langgraph", specifier = ">=0.0.23" },
+    { name = "copilotkit", specifier = ">=0.1.76" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "langchain-openai", specifier = ">=1.1.0" },
     { name = "langgraph", specifier = ">=1.0.5" },

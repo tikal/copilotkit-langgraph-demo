@@ -4,6 +4,5 @@ export const BACKEND_URL =
 export const AGENT_ID = "my-agent";
 
 export interface AgentState {
-  counter: number;
   status: string;
 }

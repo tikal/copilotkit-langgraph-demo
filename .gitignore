@@ -37,6 +37,15 @@ out/
 .DS_Store
 Thumbs.db
 
+# Testing
+.playwright-mcp/
+
+# Tool configs
+.pdm-python
+
+# Documentation (generated/research)
+docs/
+
 # Lock files (optional - uncomment if you want to ignore)
 # uv.lock
 # package-lock.json
