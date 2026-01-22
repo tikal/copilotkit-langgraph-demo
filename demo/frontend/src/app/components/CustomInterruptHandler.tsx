@@ -47,6 +47,111 @@ function ModalOverlay({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Type guard for server_command_approval interrupt action.
+ */
+function isServerCommandApproval(
+  interrupt: InterruptValue
+): interrupt is { action: "server_command_approval"; args: { command: string; reason: string } } {
+  return (
+    typeof interrupt === "object" &&
+    "action" in interrupt &&
+    interrupt.action === "server_command_approval"
+  );
+}
+
+/**
+ * Extract display content from various interrupt value formats.
+ */
+function getDisplayContent(interrupt: InterruptValue): string {
+  if (typeof interrupt === "string") return interrupt;
+  if ("message" in interrupt) return interrupt.message;
+  return JSON.stringify(interrupt, null, 2);
+}
+
+/**
+ * Modal for server-side dangerous command approval.
+ */
+function ServerCommandApprovalModal({
+  command,
+  reason,
+  onApprove,
+  onCancel,
+}: {
+  command: string;
+  reason: string;
+  onApprove: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <ModalOverlay>
+      <h3 className="text-lg font-bold text-purple-800 flex items-center gap-2">
+        <span>🔒</span> Server Interrupt HITL
+      </h3>
+      <p className="text-sm text-gray-700 mt-3">{reason}</p>
+      <div className="mt-3 p-3 bg-gray-100 rounded font-mono text-sm overflow-x-auto">
+        {command}
+      </div>
+      <div className="flex gap-3 mt-5">
+        <button
+          onClick={onApprove}
+          className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors"
+        >
+          Execute
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-medium transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+      <p className="text-xs text-purple-500 mt-3">
+        Interrupt-based HITL (interrupt() + agent.subscribe)
+      </p>
+    </ModalOverlay>
+  );
+}
+
+/**
+ * Modal for generic interrupt responses with free-form input.
+ */
+function GenericInputModal({
+  content,
+  onSubmit,
+}: {
+  content: string;
+  onSubmit: (response: string) => void;
+}) {
+  return (
+    <ModalOverlay>
+      <h3 className="text-lg font-bold text-gray-800">Agent Needs Your Input</h3>
+      <p className="text-gray-600 mt-3 whitespace-pre-wrap">{content}</p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit(new FormData(e.currentTarget).get("response") as string);
+        }}
+        className="mt-4"
+      >
+        <input
+          type="text"
+          name="response"
+          placeholder="Your response"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoFocus
+        />
+        <button
+          type="submit"
+          className="w-full mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors"
+        >
+          Submit
+        </button>
+      </form>
+    </ModalOverlay>
+  );
+}
+
+/**
  * Best-practice interrupt handler for LangGraph interrupts with CopilotKit.
  *
  * Key principles:
@@ -102,71 +207,16 @@ export function CustomInterruptHandler() {
 
   if (!interrupt) return null;
 
-  // Handle the server_command_approval action from our backend
-  if (typeof interrupt === "object" && "action" in interrupt && interrupt.action === "server_command_approval") {
+  if (isServerCommandApproval(interrupt)) {
     return (
-      <ModalOverlay>
-        <h3 className="text-lg font-bold text-purple-800 flex items-center gap-2">
-          <span>🔒</span> Server Interrupt HITL
-        </h3>
-        <p className="text-sm text-gray-700 mt-3">{interrupt.args.reason}</p>
-        <div className="mt-3 p-3 bg-gray-100 rounded font-mono text-sm overflow-x-auto">
-          {interrupt.args.command}
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button
-            onClick={() => handleResponse("APPROVED")}
-            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors"
-          >
-            Execute
-          </button>
-          <button
-            onClick={() => handleResponse("CANCEL")}
-            className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-medium transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-        <p className="text-xs text-purple-500 mt-3">
-          Interrupt-based HITL (interrupt() + agent.subscribe)
-        </p>
-      </ModalOverlay>
+      <ServerCommandApprovalModal
+        command={interrupt.args.command}
+        reason={interrupt.args.reason}
+        onApprove={() => handleResponse("APPROVED")}
+        onCancel={() => handleResponse("CANCEL")}
+      />
     );
   }
 
-  // Generic interrupt handler for other types (string or object with message)
-  const displayContent = typeof interrupt === "string"
-    ? interrupt
-    : "message" in interrupt
-      ? interrupt.message
-      : JSON.stringify(interrupt, null, 2);
-
-  return (
-    <ModalOverlay>
-      <h3 className="text-lg font-bold text-gray-800">Agent Needs Your Input</h3>
-      <p className="text-gray-600 mt-3 whitespace-pre-wrap">{displayContent}</p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          handleResponse(formData.get("response") as string);
-        }}
-        className="mt-4"
-      >
-        <input
-          type="text"
-          name="response"
-          placeholder="Your response"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          autoFocus
-        />
-        <button
-          type="submit"
-          className="w-full mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors"
-        >
-          Submit
-        </button>
-      </form>
-    </ModalOverlay>
-  );
+  return <GenericInputModal content={getDisplayContent(interrupt)} onSubmit={handleResponse} />;
 }

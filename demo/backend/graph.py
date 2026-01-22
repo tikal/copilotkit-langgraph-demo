@@ -59,52 +59,60 @@ def get_user_message(state: AgentState) -> str:
     return ""
 
 
+async def make_response(config: RunnableConfig, message: str) -> dict:
+    """Emit idle state and return formatted response."""
+    await copilotkit_emit_state(config, {"status": "idle"})
+    return {"messages": [AIMessage(content=message)], "status": "idle"}
+
+
+async def request_dangerous_command_approval(
+    user_message: str, config: RunnableConfig
+) -> str | None:
+    """
+    If message contains dangerous command, interrupt for approval.
+    Returns None to continue, or a cancellation message to return early.
+    """
+    if not is_dangerous_command(user_message):
+        return None
+
+    command = extract_command(user_message)
+    user_decision = interrupt({
+        "__copilotkit_interrupt_value__": {
+            "action": "server_command_approval",
+            "args": {
+                "command": command,
+                "reason": "This request contains a potentially dangerous command pattern and requires explicit approval before proceeding",
+                "original_message": user_message,
+            },
+        },
+    })
+
+    if user_decision == "CANCEL":
+        cancel_message = "Request cancelled by user. I won't proceed with dangerous command information."
+        await copilotkit_emit_message(config, cancel_message)
+        return cancel_message
+
+    await copilotkit_emit_message(config, "Approval granted. Proceeding with your request...")
+    return None
+
+
+def create_llm_with_tools(state: AgentState) -> ChatOpenAI:
+    """Create LLM with frontend tools bound from CopilotKit state."""
+    frontend_tools = state.get("copilotkit", {}).get("actions", [])
+    llm = ChatOpenAI(model="gpt-4o-mini")
+    return llm.bind_tools(frontend_tools) if frontend_tools else llm
+
+
 async def chat_node(state: AgentState, config: RunnableConfig):
     """Main chat node that handles conversation with interrupt-based HITL."""
-    config = copilotkit_customize_config(
-        config,
-        emit_messages=True,
-    )
+    config = copilotkit_customize_config(config, emit_messages=True)
     await copilotkit_emit_state(config, {"status": "thinking"})
 
-    # Server-side interrupt HITL: Check user's message BEFORE LLM processing
-    # This allows us to interrupt dangerous command requests before any response is generated
     user_message = get_user_message(state)
+    if cancel_msg := await request_dangerous_command_approval(user_message, config):
+        return await make_response(config, cancel_msg)
 
-    if is_dangerous_command(user_message):
-        command = extract_command(user_message)
-        # Use LangGraph's interrupt() with CopilotKit-style structure.
-        # The frontend catches this via agent.subscribe (AgentSubscriber from @ag-ui/client).
-        # When user resolves, the graph resumes with the response.
-        user_decision = interrupt({
-            "__copilotkit_interrupt_value__": {
-                "action": "server_command_approval",
-                "args": {
-                    "command": command,
-                    "reason": "This request contains a potentially dangerous command pattern and requires explicit approval before proceeding",
-                    "original_message": user_message,
-                },
-            },
-        })
-
-        # After resume, user_decision contains the user's choice
-        if user_decision == "CANCEL":
-            cancel_message = "Request cancelled by user. I won't proceed with dangerous command information."
-            await copilotkit_emit_message(config, cancel_message)
-            await copilotkit_emit_state(config, {"status": "idle"})
-            return {"messages": [AIMessage(content=cancel_message)], "status": "idle"}
-        else:
-            approval_message = "Approval granted. Proceeding with your request..."
-            await copilotkit_emit_message(config, approval_message)
-            # Fall through to normal LLM processing
-
-    # Bind frontend tools (HITL, etc.) from CopilotKit state
-    frontend_tools = state.get("copilotkit", {}).get("actions", [])
-
-    llm = ChatOpenAI(model="gpt-4o-mini")
-    if frontend_tools:
-        llm = llm.bind_tools(frontend_tools)
-
+    llm = create_llm_with_tools(state)
     response = await llm.ainvoke(state["messages"], config)
 
     await copilotkit_emit_state(config, {"status": "idle"})
