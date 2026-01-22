@@ -1,12 +1,12 @@
 """Fixed LangGraphAgent that properly handles regeneration with checkpointers."""
 
-from ag_ui_langgraph import LangGraphAgent
+from copilotkit import LangGraphAGUIAgent
 from ag_ui.core import RunAgentInput
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage
 
 
-class FixedLangGraphAgent(LangGraphAgent):
+class FixedLangGraphAgent(LangGraphAGUIAgent):
     """
     LangGraphAgent subclass that fixes the regenerate bug.
 

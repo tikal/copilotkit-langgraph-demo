@@ -20,6 +20,7 @@ import {
 } from "@copilotkit/react-core/v2";
 import { AGENT_ID, AgentState } from "../lib/constants";
 import { useThreadManager } from "../hooks/useThreadManager";
+import { CustomInterruptHandler } from "./CustomInterruptHandler";
 
 /**
  * Context to provide regenerate function from a stable parent.
@@ -189,6 +190,8 @@ export function PatternPage({ config, renderProvider }: PatternPageProps) {
               />
             )}
           </main>
+          {/* Single interrupt handler at parent level - never place in child views */}
+          <CustomInterruptHandler />
         </div>
       ),
     }),
